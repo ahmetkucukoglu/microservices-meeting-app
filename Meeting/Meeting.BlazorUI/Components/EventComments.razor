@@ -1,0 +1,29 @@
+﻿@using Meeting.BlazorUI.Data
+
+<div class="spinner-grow text-info d-none" id="commentsSpinner" style="width:60px; height:60px;" role="status">
+    <span class="sr-only">Yükleniyor...</span>
+</div>
+
+@if (Comments != null && Comments.Count() == 0)
+{
+    <span class="text-secondary">Henüz yorum girilmemiş.</span>
+}
+else if (Comments != null && Comments.Count() > 0)
+{
+    @foreach (var comment in Comments)
+    {
+        <div class="card rounded-0 border-0 mb-3">
+            <div class="card-body">
+                <h5 class="card-title">@comment.CommentatorName</h5>
+                <h6 class="card-subtitle mb-2 text-muted">@comment.CommentedDate</h6>
+                <p class="card-text">@comment.Comment</p>
+            </div>
+        </div>
+    }
+}
+
+@code {
+
+    [Parameter]
+    public GetCommentsResponse[] Comments { get; set; }
+}

@@ -1,0 +1,39 @@
+version: '3.7'
+
+services:                    
+  couchbase:
+    volumes:
+      - ~/couchbase:/opt/couchbase/var
+    ports:
+      - 8091:8091
+      - 8092:8092
+      - 8093:8093
+      - 8094:8094
+      - 11210:11210
+    networks:
+      - meeting
+  
+  eventstore:
+    volumes:
+      - ~/eventstore/data:/var/lib/eventstore
+      - ~/eventstore/log:/var/log/eventstore
+    ports:
+      - 2113:2113
+      - 1113:1113
+    networks:
+      - meeting
+      
+  fabio:
+    environment:
+      - FABIO_REGISTRY_CONSUL_ADDR=consul:8500
+    ports:
+      - 9998:9998
+      - 9999:9999
+    networks:
+      - meeting
+      
+  consul:
+    ports:
+      - 8500:8500
+    networks:
+      - meeting

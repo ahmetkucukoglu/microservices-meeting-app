@@ -1,0 +1,208 @@
+﻿@page "/groups/{urlKey}"
+
+@using Meeting.BlazorUI.Data
+@using Toolbelt.Blazor.HeadElement
+
+@inject IJSRuntime JSRuntime
+@inject HttpClient httpClient
+
+<Title>@group?.Name</Title>
+
+<div class="spinner-grow text-info" id="groupSpinner" style="width:60px; height:60px;" role="status">
+    <span class="sr-only">Yükleniyor...</span>
+</div>
+
+@if (group != null)
+
+{
+    <div class="row">
+        <div class="col"><h1>@group.Name</h1></div>
+    </div>
+
+    <div class="row">
+        <div class="col">
+            <div class="d-flex flex-row mb-3 text-secondary">
+                <div class="p-2"><i class="fas fa-map-marker-alt"></i> @group.City.Name</div>
+                <div class="p-2"><i class="fas fa-user-friends"></i> @group.MembersCount members</div>
+            </div>
+        </div>
+        <div class="col text-right">
+            <AuthorizeView>
+                <Authorized>
+                    @if (memberInfo.MemberedIn)
+                    {
+                        <button type="button" id="btnLeave" @onclick="Leave" class="btn btn-danger">
+                            <span class="spinner-grow spinner-grow-sm d-none" role="status" aria-hidden="true"></span>
+                            Üyelikten ayrıl
+                        </button>
+                    }
+                    else
+                    {
+                        <button type="button" id="btnJoin" @onclick="Join" class="btn btn-primary">
+                            <span class="spinner-grow spinner-grow-sm d-none" role="status" aria-hidden="true"></span>
+                            Gruba üye ol
+                        </button>
+                    }
+                </Authorized>
+                <NotAuthorized>
+                    <button type="button" class="btn btn-primary" disabled>
+                        Gruba üye ol
+                    </button>
+                    <a href="/Login?redirectUri=/groups/@group.UrlKey">Oturum aç</a>
+                </NotAuthorized>
+            </AuthorizeView>
+        </div>
+    </div>
+
+    <div class="row mt-4 mb-4">
+        <div class="col">
+            <ul class="nav nav-tabs" id="groupTab" role="tablist">
+                <li class="nav-item">
+                    <a class="nav-link active" id="about-tab" data-toggle="tab" href="#about" role="tab" aria-controls="about" aria-selected="true">Hakkında</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="events-tab" @onclick="(() => LoadActiveEvents())" data-toggle="tab" href="#events" role="tab" aria-controls="events" aria-selected="false">Etkinlikler</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="members-tab" data-toggle="tab" @onclick="(() => LoadMembers())" href="#members" role="tab" aria-controls="members" aria-selected="false">Üyeler</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+
+    <div class="row">
+        <div class="col-9">
+            <div class="tab-content" id="groupTabContent">
+                <div class="tab-pane fade show active" id="about" role="tabpanel" aria-labelledby="about-tab">
+                    <span style="white-space: pre-line">@group.Description</span>
+
+                    <br /><br />
+
+                    <strong>Konular :</strong>
+                    @foreach (var topic in group.Topics)
+                    {
+                        <span class="badge badge-info">@topic.Name</span>
+                    }
+                </div>
+                <div class="tab-pane fade" id="events" role="tabpanel" aria-labelledby="events-tab">
+                    <div class="text-right">
+                        <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                            <label class="btn btn-light active" @onclick="(() => LoadActiveEvents())">
+                                <input type="radio" name="chkEventType" id="chkUpcomingEvent" checked> Yaklaşan etkinlikler
+                            </label>
+                            <label class="btn btn-light" @onclick="(() => LoadPastEvents())">
+                                <input type="radio" name="chkEventType" id="chkPastEvent"> Geçmiş etkinlikler
+                            </label>
+                        </div>
+                    </div>
+
+                    <GroupEvents Events="events"></GroupEvents>
+                </div>
+                <div class="tab-pane fade" id="members" role="tabpanel" aria-labelledby="members-tab">
+                    <GroupMembers Members="members"></GroupMembers>
+                </div>
+            </div>
+        </div>
+        <div class="col-3">
+            <h5>ORGANİZATÖR</h5>
+            <span>@group.Organizer.Name</span>
+        </div>
+    </div>
+}
+
+@code {
+
+    [Parameter]
+    public string UrlKey { get; set; }
+
+
+    private GetGroupByIdResponse group;
+
+    private GetMemberInfoResponse memberInfo;
+
+    private GetGroupEventsResponse[] events;
+
+    private GetMembersResponse[] members;
+
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var response = await httpClient.GetJsonAsync<ApiResponse<GetGroupByIdCompositionResponse>>($"groups/urlKey/{UrlKey}");
+
+            group = response.Result.Group;
+            memberInfo = response.Result.MemberInfo;
+
+            await JSRuntime.InvokeVoidAsync("group.hideGroupSpinner");
+
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadActiveEvents()
+    {
+        await JSRuntime.InvokeVoidAsync("group.showEventsSpinner");
+
+        var response = await httpClient.GetJsonAsync<ApiResponse<GetGroupEventsResponse[]>>($"groups/{group.Id}/active-events");
+
+        await JSRuntime.InvokeVoidAsync("group.hideEventsSpinner");
+
+        events = response.Result;
+    }
+
+    private async Task LoadPastEvents()
+    {
+        await JSRuntime.InvokeVoidAsync("group.showEventsSpinner");
+
+        var response = await httpClient.GetJsonAsync<ApiResponse<GetGroupEventsResponse[]>>($"groups/{group.Id}/past-events");
+
+        await JSRuntime.InvokeVoidAsync("group.hideEventsSpinner");
+
+        events = response.Result;
+    }
+
+    private async Task LoadMembers()
+    {
+        await JSRuntime.InvokeVoidAsync("group.showMembersSpinner");
+
+        var response = await httpClient.GetJsonAsync<ApiResponse<GetMembersResponse[]>>($"groups/{group.Id}/members");
+
+        await JSRuntime.InvokeVoidAsync("group.hideMembersSpinner");
+
+        members = response.Result;
+    }
+
+    private async Task Join()
+    {
+        await JSRuntime.InvokeVoidAsync("group.preJoin");
+
+        var response = await httpClient.PatchAsync($"groups/{group.Id}/join", null);
+
+        if (response.StatusCode == System.Net.HttpStatusCode.OK)
+        {
+            await JSRuntime.InvokeAsync<string>("group.postSuccessJoin", "Gruba üye oldunuz");
+        }
+        else
+        {
+            await JSRuntime.InvokeVoidAsync("group.postFailJoin");
+        }
+    }
+
+    private async Task Leave()
+    {
+        await JSRuntime.InvokeVoidAsync("group.preLeave");
+
+        var response = await httpClient.PatchAsync($"groups/{group.Id}/leave", null);
+
+        if (response.StatusCode == System.Net.HttpStatusCode.OK)
+        {
+            await JSRuntime.InvokeAsync<string>("group.postSuccessLeave", "Gruba üyelikten ayrıldınız");
+        }
+        else
+        {
+            await JSRuntime.InvokeVoidAsync("group.postFailLeave");
+        }
+    }
+}

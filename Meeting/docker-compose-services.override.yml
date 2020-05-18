@@ -1,0 +1,134 @@
+version: '3.7'
+
+services:
+  cities:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - Consul__ServiceDiscoveryAddress=http://consul:8500
+      - Consul__ServiceAddress=http://cities:80
+      - Consul__ServiceName=cities
+      - Consul__ServiceId=cities-v1
+      - Couchbase__Host=couchbase://couchbase
+      - Couchbase__Username=admin
+      - Couchbase__Password=123456
+      - EventStore__Host=tcp://eventstore:1113
+      - EventStore__Username=admin
+      - EventStore__Password=changeit
+    ports:
+      - 5000:80
+    networks:
+      - meeting
+      
+  topics:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - Consul__ServiceDiscoveryAddress=http://consul:8500
+      - Consul__ServiceAddress=http://topics:80
+      - Consul__ServiceName=topics
+      - Consul__ServiceId=topics-v1
+      - Couchbase__Host=couchbase://couchbase
+      - Couchbase__Username=admin
+      - Couchbase__Password=123456
+      - EventStore__Host=tcp://eventstore:1113
+      - EventStore__Username=admin
+      - EventStore__Password=changeit
+    ports:
+      - 5001:80
+    networks:
+      - meeting
+      
+  users:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - Consul__ServiceDiscoveryAddress=http://consul:8500
+      - Consul__ServiceAddress=http://users:80
+      - Consul__ServiceName=users
+      - Consul__ServiceId=users-v1
+      - Couchbase__Host=couchbase://couchbase
+      - Couchbase__Username=admin
+      - Couchbase__Password=123456
+      - EventStore__Host=tcp://eventstore:1113
+      - EventStore__Username=admin
+      - EventStore__Password=changeit
+    ports:
+      - 5002:80
+    networks:
+      - meeting
+      
+  groups:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - Consul__ServiceDiscoveryAddress=http://consul:8500
+      - Consul__ServiceAddress=http://groups:80
+      - Consul__ServiceName=groups
+      - Consul__ServiceId=groups-v1
+      - Couchbase__Host=couchbase://couchbase
+      - Couchbase__Username=admin
+      - Couchbase__Password=123456
+      - EventStore__Host=tcp://eventstore:1113
+      - EventStore__Username=admin
+      - EventStore__Password=changeit
+    ports:
+      - 5003:80
+    networks:
+      - meeting
+      
+  groups_consumer:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - Couchbase__Host=couchbase://couchbase
+      - Couchbase__Username=admin
+      - Couchbase__Password=123456
+      - EventStore__Host=tcp://eventstore:1113
+      - EventStore__Username=admin
+      - EventStore__Password=changeit
+    ports:
+      - 5004:80
+    networks:
+      - meeting
+      
+  events:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - Consul__ServiceDiscoveryAddress=http://consul:8500
+      - Consul__ServiceAddress=http://events:80
+      - Consul__ServiceName=events
+      - Consul__ServiceId=events-v1
+      - Couchbase__Host=couchbase://couchbase
+      - Couchbase__Username=admin
+      - Couchbase__Password=123456
+      - EventStore__Host=tcp://eventstore:1113
+      - EventStore__Username=admin
+      - EventStore__Password=changeit
+    ports:
+      - 5005:80
+    networks:
+      - meeting
+      
+  events_consumer:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - Couchbase__Host=couchbase://couchbase
+      - Couchbase__Username=admin
+      - Couchbase__Password=123456
+      - EventStore__Host=tcp://eventstore:1113
+      - EventStore__Username=admin
+      - EventStore__Password=changeit
+    ports:
+      - 5006:80
+    networks:
+      - meeting
+      
+  gateway:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - Fabio__Host=http://fabio:9999
+      - Fabio__CitiesSource=cities
+      - Fabio__TopicsSource=topics
+      - Fabio__UsersSource=users
+      - Fabio__GroupsSource=groups
+      - Fabio__EventsSource=events
+    ports:
+      - 1453:80
+    networks:
+      - meeting

@@ -1,0 +1,244 @@
+﻿@page "/events/{urlKey}"
+
+@using Meeting.BlazorUI.Data
+@using Toolbelt.Blazor.HeadElement
+
+@inject IJSRuntime JSRuntime
+@inject HttpClient httpClient
+
+<Title>@ev?.Subject</Title>
+
+<div class="spinner-grow text-info" id="eventSpinner" style="width:60px; height:60px;" role="status">
+    <span class="sr-only">Yükleniyor...</span>
+</div>
+
+@if (ev != null)
+{
+    <div class="row">
+        <div class="col">
+            <h1 class="d-inline">@ev.Subject</h1>
+            @if (ev.Status == "completed")
+            {
+                <span class="badge badge-secondary align-text-top">Tamamlandı</span>
+            }
+            else if (ev.Status == "cancelled")
+            {
+                <span class="badge badge-danger align-text-top">İptal edildi</span>
+            }
+            else if (ev.Status == "active")
+            {
+                <span class="badge badge-success align-text-top">Aktif</span>
+            }
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col">
+            <div class="d-flex flex-row mb-3 text-secondary">
+                <div class="p-2">
+                    <i class="fas fa-bullhorn"></i> <a asp-controller="Groups" asp-action="Index" asp-route-urlKey="@group.UrlKey">@ev.Group.Name</a>
+                </div>
+                <div class="p-2"><i class="fas fa-user-friends"></i> @ev.AttendeeCount katılımcı</div>
+            </div>
+        </div>
+        <div class="col text-right">
+            <AuthorizeView>
+                <Authorized>
+                    @if (ev.Status == "active" && attendeeInfo.AttendedIn)
+                    {
+                        <button type="button" id="btnLeave" @onclick="Leave" class="btn btn-danger">
+                            <span class="spinner-grow spinner-grow-sm d-none" role="status" aria-hidden="true"></span>
+                            Etkinlikten ayrıl
+                        </button>
+                    }
+                    else if (ev.Status == "active" && !attendeeInfo.AttendedIn)
+                    {
+                        <button type="button" id="btnJoin" @onclick="Join" class="btn btn-primary">
+                            <span class="spinner-grow spinner-grow-sm d-none" role="status" aria-hidden="true"></span>
+                            Etkinliğe katıl
+                        </button>
+                    }
+                </Authorized>
+                <NotAuthorized>
+                    <button type="button" class="btn btn-primary" disabled>
+                        Etkinliğe katıl
+                    </button>
+                    <a href="/Login?redirectUri=/events/@ev.UrlKey">Oturum aç</a>
+                </NotAuthorized>
+            </AuthorizeView>
+        </div>
+    </div>
+
+    <div class="row mt-5 mb-4">
+        <div class="col">
+            <ul class="nav nav-tabs" id="eventTab" role="tablist">
+                <li class="nav-item">
+                    <a class="nav-link active" id="detail-tab" data-toggle="tab" href="#detail" role="tab" aria-controls="detail" aria-selected="true">Detay</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="attendees-tab" @onclick="(() => LoadAttendees())" data-toggle="tab" href="#attendees" role="tab" aria-controls="attendees" aria-selected="false">Katılımcılar</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="comments-tab" @onclick="(() => LoadComments())" data-toggle="tab" href="#comments" role="tab" aria-controls="comments" aria-selected="false">Yorumlar</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-9">
+            <div class="tab-content" id="eventTabContent">
+                <div class="tab-pane fade show active" id="detail" role="tabpanel" aria-labelledby="detail-tab">
+                    @ev.Description
+                </div>
+                <div class="tab-pane fade" id="attendees" role="tabpanel" aria-labelledby="attendees-tab">
+                    <EventAttendees Attendees="attendees"></EventAttendees>
+                </div>
+                <div class="tab-pane fade" id="comments" role="tabpanel" aria-labelledby="comments-tab">
+                    <AuthorizeView>
+                        <Authorized>
+                            @if (context.User.Identity.IsAuthenticated && ev.Status == "completed" && attendeeInfo.AttendedIn)
+                            {
+                                <div class="card bg-light mb-3 border-0 shadow-sm">
+                                    <div class="card-body">
+                                        <div class="form-group text-right mb-0">
+                                            <textarea class="form-control" id="txtComment" @bind="Comment" rows="3"></textarea>
+
+                                            <button type="button" id="btnComment" @onclick="AddComment" class="btn btn-primary mt-3">
+                                                <span class="spinner-grow spinner-grow-sm d-none" role="status" aria-hidden="true"></span>
+                                                Yorum yap
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </Authorized>
+                    </AuthorizeView>
+                    
+                    <EventComments Comments="comments"></EventComments>
+                </div>
+            </div>
+        </div>
+        <div class="col-3">
+            <h5><i class="far fa-clock"></i> Zaman</h5>
+            @ev.Date
+
+            <hr />
+
+            <h5><i class="far fa-map"></i> Adres</h5>
+            @ev.Address
+
+            <iframe class="w-100" height="250" frameborder="0" style="border:0"
+                    src="https://www.google.com/maps/embed/v1/place?zoom=17&q=@(ev.Location.Latitude.ToString().Replace(",","."))%2C@(ev.Location.Longitude.ToString().Replace(",","."))&key=AIzaSyDGdZSpzj2aDBeCYF_Qg1NG9G8GHfbOz9I" allowfullscreen></iframe>
+        </div>
+    </div>
+}
+
+@code {
+
+    [Parameter]
+    public string UrlKey { get; set; }
+
+    public string Comment { get; set; }
+
+
+    private GetGroupByIdResponse group;
+
+    private GetEventByIdResponse ev;
+
+    private GetAttendeeInfoResponse attendeeInfo;
+
+    private GetCommentsResponse[] comments;
+
+    private GetAttendeesResponse[] attendees;
+
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var response = await httpClient.GetJsonAsync<ApiResponse<GetEventByIdCompositionResponse>>($"events/urlKey/{UrlKey}");
+
+            ev = response.Result.Event;
+            group = response.Result.Group;
+            attendeeInfo = response.Result.AttendeeInfo;
+
+            await JSRuntime.InvokeVoidAsync("event.hideEventSpinner");
+
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadComments()
+    {
+        await JSRuntime.InvokeVoidAsync("event.showCommentsSpinner");
+
+        var response = await httpClient.GetJsonAsync<ApiResponse<GetCommentsResponse[]>>($"events/{ev.Id}/comments");
+
+        await JSRuntime.InvokeVoidAsync("event.hideCommentsSpinner");
+
+        comments = response.Result;
+    }
+
+    private async Task LoadAttendees()
+    {
+        await JSRuntime.InvokeVoidAsync("event.showAttendeesSpinner");
+
+        var response = await httpClient.GetJsonAsync<ApiResponse<GetAttendeesResponse[]>>($"events/{ev.Id}/attendees");
+
+        await JSRuntime.InvokeVoidAsync("event.hideAttendeesSpinner");
+
+        attendees = response.Result;
+    }
+
+    private async Task AddComment()
+    {
+        if (string.IsNullOrEmpty(Comment))
+            return;
+
+        await JSRuntime.InvokeVoidAsync("event.preAddComment");
+
+        var response = await httpClient.PostJsonAsync<ApiResponse<object>>($"events/{ev.Id}/comments", new AddCommentRequest { Comment = Comment });
+
+        if (response.Code == (int)System.Net.HttpStatusCode.OK)
+        {
+            await JSRuntime.InvokeAsync<string>("event.postSuccessAddComment", "Yorum yaptınız");
+        }
+        else
+        {
+            await JSRuntime.InvokeVoidAsync("event.postFailAddComment");
+        }
+    }
+
+    private async Task Join()
+    {
+        await JSRuntime.InvokeVoidAsync("event.preJoin");
+
+        var response = await httpClient.PatchAsync($"events/{ev.Id}/join", null);
+
+        if (response.StatusCode == System.Net.HttpStatusCode.OK)
+        {
+            await JSRuntime.InvokeAsync<string>("event.postSuccessJoin", "Etkinliğe katıldınız");
+        }
+        else
+        {
+            await JSRuntime.InvokeVoidAsync("event.postFailJoin");
+        }
+    }
+
+    private async Task Leave()
+    {
+        await JSRuntime.InvokeVoidAsync("event.preLeave");
+
+        var response = await httpClient.PatchAsync($"events/{ev.Id}/leave", null);
+
+        if (response.StatusCode == System.Net.HttpStatusCode.OK)
+        {
+            await JSRuntime.InvokeAsync<string>("event.postSuccessLeave", "Etkinlikten ayrıldınız");
+        }
+        else
+        {
+            await JSRuntime.InvokeVoidAsync("event.postFailLeave");
+        }
+    }
+}

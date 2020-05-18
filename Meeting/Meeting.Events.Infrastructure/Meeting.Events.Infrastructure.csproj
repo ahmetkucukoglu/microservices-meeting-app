@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Couchbase.Extensions.DependencyInjection" Version="2.0.2" />
+    <PackageReference Include="CouchbaseNetClient" Version="2.7.16" />
+    <PackageReference Include="EventStore.Client" Version="5.0.6" />
+    <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
+    <PackageReference Include="System.Text.Json" Version="4.7.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Meeting.Events.Core\Meeting.Events.Core.csproj" />
+  </ItemGroup>
+
+</Project>

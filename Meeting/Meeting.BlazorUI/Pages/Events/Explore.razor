@@ -1,0 +1,175 @@
+﻿@page "/explore-events"
+
+@using Blazored.Typeahead
+@using Meeting.BlazorUI.Data
+@using System.Globalization
+@using Toolbelt.Blazor.HeadElement
+
+@inject IJSRuntime JSRuntime
+@inject HttpClient httpClient
+
+<Title>Explore Events</Title>
+
+<div class="row">
+    <div class="col">
+        <div class="text-center">
+            <h1 class="display-4">Bir sonraki etkinliğinizi bulun</h1>
+            <div style="font-size:1.2rem;">
+                <div class="dropdown d-inline-block">
+                    <a href="#" id="keywordFilter" class="text-info" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        @if (!string.IsNullOrEmpty(Keyword))
+                        {
+                            @Keyword
+                        }
+                        else
+                        {
+                            @:____
+                        }
+                    </a>
+                    <div aria-labelledby="keywordFilter" class="dropdown-menu shadow-sm p-2" style="width: 185px !important;">
+                        <input class="form-control rounded-0" id="keyword" placeholder="Konu" @bind="Keyword" />
+                    </div>
+                </div> ile ilgili
+                <div class="dropdown d-inline-block">
+                    <a href="#" id="cityFilter" class="text-info" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        @if (SelectedCity != null)
+                        {
+                            @SelectedCity.Name
+                        }
+                        else
+                        {
+                            @:____
+                        }
+                    </a>
+                    <div aria-labelledby="cityFilter" class="dropdown-menu shadow-sm p-2" style="width: 185px !important;">
+                        <BlazoredTypeahead SearchMethod="GetCities" @bind-Value="SelectedCity" MinimumLength="3">
+                            <SelectedTemplate>
+                                @context.Name
+                            </SelectedTemplate>
+                            <ResultTemplate>
+                                @context.Name
+                            </ResultTemplate>
+                            <NotFoundTemplate>
+                                Sonuç bulunamadı
+                            </NotFoundTemplate>
+
+                        </BlazoredTypeahead>
+                    </div>
+                </div>
+                <div class="dropdown d-inline-block">
+                    <a id="radiusFilter" class="text-info" href="#" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        @if (Radius.HasValue)
+                        {
+                            @Radius @:km
+                        }
+                        else
+                        {
+                            @:____
+                        }
+                    </a>
+                    <div aria-labelledby="radiusFilter" class="dropdown-menu shadow-sm">
+                        <a class="dropdown-item pl-2" @onclick="() => { SetRadius(5); }">5km</a>
+                        <a class="dropdown-item pl-2" @onclick="() => { SetRadius(10); }">10km</a>
+                        <a class="dropdown-item pl-2" @onclick="() => { SetRadius(15); }">15km</a>
+                        <a class="dropdown-item pl-2" @onclick="() => { SetRadius(20); }">20km</a>
+                        <a class="dropdown-item pl-2" @onclick="() => { SetRadius(25); }">25km</a>
+                        <a class="dropdown-item pl-2" @onclick="() => { SetRadius(30); }">30km</a>
+                        <a class="dropdown-item pl-2" @onclick="() => { SetRadius(40); }">40km</a>
+                        <a class="dropdown-item pl-2" @onclick="() => { SetRadius(50); }">50km</a>
+                    </div>
+                </div> civardaki etkinlikleri arıyorum.
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col">
+        <div class="text-center">
+            <div class="spinner-grow text-info d-none" id="eventsSpinner" style="width:60px; height:60px;" role="status">
+                <span class="sr-only">Yükleniyor...</span>
+            </div>
+            <div class="mt-5" id="groups">
+
+                @if (events != null && events.Count() == 0)
+                {
+                    <h5 class="text-secondary">Yakında etkinlik bulunamadı.</h5>
+                }
+                else if (events != null && events.Count() > 0)
+                {
+                    foreach (var ev in events)
+                    {
+                        <div class="card rounded-0 border-0 mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title"><a class="text-info" href="events/@ev.UrlKey">@ev.Subject</a></h5>
+                                <h6 class="card-subtitle mb-2 text-muted">@ev.Date</h6>
+                                <p class="card-text">
+                                    @ev.Description
+                                </p>
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+
+    public GetCitiesByTermResponse SelectedCity { get; set; }
+
+    public string Keyword { get; set; }
+
+    public int? Radius { get; set; }
+
+
+    private GetCitiesByTermResponse citySelection
+    {
+        get => SelectedCity;
+        set
+        {
+            SelectedCity = value;
+            InputChanged();
+        }
+    }
+
+
+    private GetUpcomingEventsResponse[] events;
+
+
+    private async Task<IEnumerable<GetCitiesByTermResponse>> GetCities(string term)
+    {
+        var response = await httpClient.GetJsonAsync<ApiResponse<IEnumerable<GetCitiesByTermResponse>>>($"cities/find?term={term}");
+
+        return response.Result;
+    }
+
+    private async void GetEvents()
+    {
+        await JSRuntime.InvokeVoidAsync("exploreEvents.showSpinner");
+
+        var response = await httpClient.GetJsonAsync<ApiResponse<GetUpcomingEventsResponse[]>>($"events/upcoming?latitude={SelectedCity.Location.Latitude.ToString(CultureInfo.GetCultureInfo("en-US"))}&longitude={SelectedCity.Location.Longitude.ToString(CultureInfo.GetCultureInfo("en-US"))}&radius={Radius}&keyword={Keyword}");
+
+        events = response.Result;
+
+        await JSRuntime.InvokeVoidAsync("exploreEvents.hideSpinner");
+
+        StateHasChanged();
+    }
+
+    private void SetRadius(int radius)
+    {
+        Radius = radius;
+
+        InputChanged();
+    }
+
+    private void InputChanged()
+    {
+        if (Radius.HasValue && SelectedCity != null)
+        {
+            GetEvents();
+        }
+    }
+}

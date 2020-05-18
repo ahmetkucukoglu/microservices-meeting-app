@@ -1,0 +1,29 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <UserSecretsId>690b5f3d-3006-4a18-9453-fba28e6dbe6e</UserSecretsId>
+    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Consul" Version="0.7.2.6" />
+    <PackageReference Include="Couchbase.Extensions.DependencyInjection" Version="2.0.2" />
+    <PackageReference Include="CouchbaseNetClient" Version="2.7.16" />
+    <PackageReference Include="EventStore.Client" Version="5.0.6" />
+    <PackageReference Include="MediatR" Version="8.0.1" />
+    <PackageReference Include="MediatR.Extensions.Microsoft.DependencyInjection" Version="8.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="3.1.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.9.10" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="5.3.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Meeting.Cities.Core\Meeting.Cities.Core.csproj" />
+    <ProjectReference Include="..\Meeting.Cities.Infrastructure\Meeting.Cities.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

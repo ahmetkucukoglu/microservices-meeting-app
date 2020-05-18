@@ -1,0 +1,63 @@
+version: '3.7'
+
+services:
+  cities:
+    image: cities:latest
+    build:
+      context: .
+      dockerfile: Meeting.Cities.API/Dockerfile
+    container_name: cities
+    
+  topics:
+    image: topics:latest
+    build:
+      context: .
+      dockerfile: Meeting.Topics.API/Dockerfile
+    container_name: topics
+    
+  users:
+    image: users:latest
+    build:
+      context: .
+      dockerfile: Meeting.Users.API/Dockerfile
+    container_name: users
+    
+  groups:
+    image: groups:latest
+    build:
+      context: .
+      dockerfile: Meeting.Groups.API/Dockerfile
+    container_name: groups
+    
+  groups_consumer:
+    image: groups_consumer:latest
+    build:
+      context: .
+      dockerfile: Meeting.Groups.Consumer/Dockerfile
+    container_name: groups_consumer
+    
+  events:
+    image: events:latest
+    build:
+      context: .
+      dockerfile: Meeting.Events.API/Dockerfile
+    container_name: events
+    
+  gateway:
+    image: gateway:latest
+    build:
+      context: .
+      dockerfile: Meeting.GatewayAPI/Dockerfile
+    container_name: gateway
+    
+  events_consumer:
+    image: events_consumer:latest
+    build:
+      context: .
+      dockerfile: Meeting.Events.Consumer/Dockerfile
+    container_name: events_consumer
+    
+networks:
+  meeting:
+    name: meeting-network
+    external: true

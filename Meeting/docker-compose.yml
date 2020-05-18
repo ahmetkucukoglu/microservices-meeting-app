@@ -1,0 +1,27 @@
+version: '3.7'
+
+services:       
+  consul:
+    image: consul:latest
+    command: consul agent -dev -log-level=warn -ui -client=0.0.0.0
+    hostname: consul
+    container_name: consul
+    
+  fabio:
+    image: fabiolb/fabio:latest
+    hostname: fabio
+    container_name: fabio
+    
+  couchbase:
+    image: couchbase
+    hostname: couchbase
+    container_name: couchbase
+    
+  eventstore:
+    image: eventstore/eventstore
+    hostname: eventstore
+    container_name: eventstore
+    
+networks:
+  meeting:
+    name: meeting-network

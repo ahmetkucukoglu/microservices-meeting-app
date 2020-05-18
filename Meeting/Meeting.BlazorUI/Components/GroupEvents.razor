@@ -1,0 +1,47 @@
+﻿@using Meeting.BlazorUI.Data
+
+<div class="spinner-grow text-info d-none" id="eventsSpinner" style="width:60px; height:60px;" role="status">
+    <span class="sr-only">Yükleniyor...</span>
+</div>
+
+@if (Events != null && Events.Count() == 0)
+{
+    <span class="text-secondary">Henüz etkinliği bulunmuyor.</span>
+}
+else if (Events != null && Events.Count() > 0)
+{
+    @foreach (var ev in Events)
+    {
+        <div class="card rounded-0 border-0 mb-3">
+            <div class="card-body">
+                <div class="card-title">
+                    <h5 class="d-inline"><a class="text-info" href="/events/@ev.UrlKey">@ev.Subject</a></h5>
+                    @if (ev.Status == "completed")
+                    {
+                        <span class="badge badge-secondary align-text-top">Tamamlandı</span>
+                    }
+                    else if (ev.Status == "cancelled")
+                    {
+                        <span class="badge badge-danger align-text-top">İptal edildi</span>
+                    }
+                    else if (ev.Status == "active")
+                    {
+                        <span class="badge badge-success align-text-top">Aktif</span>
+                    }
+                </div>
+                <h6 class="card-subtitle mb-2 text-muted">@ev.Date</h6>
+                <p class="card-text">
+                    @ev.Description
+                    <br /><br />
+                    <span class="text-secondary">@(@ev.AttendeeCount > 0 ? $"{ev.AttendeeCount} üye bu etkinliğe katıldı" : "Henüz katılım olmadı")</span>
+                </p>
+            </div>
+        </div>
+    }
+}
+
+@code {
+
+    [Parameter]
+    public GetGroupEventsResponse[] Events { get; set; }
+}

@@ -1,0 +1,25 @@
+﻿@using Meeting.BlazorUI.Data
+
+<div class="spinner-grow text-info d-none" id="attendeesSpinner" style="width:60px; height:60px;" role="status">
+    <span class="sr-only">Yükleniyor...</span>
+</div>
+
+@if (Attendees != null && Attendees.Count() == 0)
+{
+    <span class="text-secondary">Henüz katılım sağlanmamış.</span>
+}
+else if (Attendees != null && Attendees.Count() > 0)
+{
+    <ul class="list-group list-group-flush">
+        @foreach (var attendee in Attendees)
+        {
+            <li class="list-group-item border-0">@attendee.AttendeeName</li>
+        }
+    </ul>
+}
+
+@code {
+
+    [Parameter]
+    public GetAttendeesResponse[] Attendees { get; set; }
+}

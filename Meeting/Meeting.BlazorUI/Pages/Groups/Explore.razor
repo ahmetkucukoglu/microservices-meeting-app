@@ -1,0 +1,166 @@
+﻿@page "/explore-groups"
+
+@using Blazored.Typeahead
+@using Meeting.BlazorUI.Data
+@using Toolbelt.Blazor.HeadElement
+
+@inject IJSRuntime JSRuntime
+@inject HttpClient httpClient
+
+<Title>Explore Groups</Title>
+
+<div class="row">
+    <div class="col">
+        <div class="text-center">
+            <h1 class="display-4">Grupları keşfet</h1>
+            <div style="font-size:1.2rem;">
+                <div class="dropdown d-inline-block">
+                    <a href="#" id="topicFilter" class="text-info" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        @if (SelectedTopic != null)
+                        {
+                            @SelectedTopic.Name
+                        }
+                        else
+                        {
+                            @:____
+                        }
+                    </a>
+                    <div aria-labelledby="topicFilter" class="dropdown-menu shadow-sm p-2" style="width: 185px !important;">
+                        <BlazoredTypeahead SearchMethod="GetTopics" @bind-Value="topicSelection" MinimumLength="3">
+                            <SelectedTemplate>
+                                @context.Name
+                            </SelectedTemplate>
+                            <ResultTemplate>
+                                @context.Name
+                            </ResultTemplate>
+                            <NotFoundTemplate>
+                                Sonuç bulunamadı
+                            </NotFoundTemplate>
+                        </BlazoredTypeahead>
+                    </div>
+                </div> ile ilgili
+                <div class="dropdown d-inline-block">
+                    <a href="#" id="cityFilter" class="text-info" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        @if (SelectedCity != null)
+                        {
+                            @SelectedCity.Name
+                        }
+                        else
+                        {
+                            @:____
+                        }
+                    </a>
+                    <div aria-labelledby="cityFilter" class="dropdown-menu shadow-sm p-2" style="width: 185px !important;">
+                        <BlazoredTypeahead SearchMethod="GetCities" @bind-Value="citySelection" MinimumLength="3">
+                            <SelectedTemplate>
+                                @context.Name
+                            </SelectedTemplate>
+                            <ResultTemplate>
+                                @context.Name
+                            </ResultTemplate>
+                            <NotFoundTemplate>
+                                Sonuç bulunamadı
+                            </NotFoundTemplate>
+                        </BlazoredTypeahead>
+                    </div>
+                </div> gruplarını arıyorum.
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col">
+        <div class="text-center">
+            <div class="spinner-grow text-info d-none" id="groupsSpinner" style="width:60px; height:60px;" role="status">
+                <span class="sr-only">Yükleniyor...</span>
+            </div>
+            <div class="mt-5" id="groups">
+
+                @if (groups != null && groups.Count() == 0)
+                {
+                    <h5 class="text-secondary">Grup bulunamadı.</h5>
+                }
+                else if (groups != null && groups.Count() > 0)
+                {
+                    foreach (var group in groups)
+                    {
+                        <div class="card rounded-0 border-0 mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title"><a class="text-info" href="groups/@group.UrlKey">@group.Name</a></h5>
+                                <h6 class="card-subtitle mb-2 text-muted">@group.MembersCount üye</h6>
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+
+    public GetCitiesByTermResponse SelectedCity { get; set; }
+
+    public GetTopicsByTermResponse SelectedTopic { get; set; }
+
+
+    private GetCitiesByTermResponse citySelection
+    {
+        get => SelectedCity;
+        set
+        {
+            SelectedCity = value;
+            InputChanged();
+        }
+    }
+   
+    private GetTopicsByTermResponse topicSelection
+    {
+        get => SelectedTopic;
+        set
+        {
+            SelectedTopic = value;
+            InputChanged();
+        }
+    }
+
+
+    private FindGroupsResponse[] groups;
+
+
+    private async Task<IEnumerable<GetCitiesByTermResponse>> GetCities(string term)
+    {
+        var response = await httpClient.GetJsonAsync<ApiResponse<IEnumerable<GetCitiesByTermResponse>>>($"cities/find/?term={term}");
+
+        return response.Result;
+    }
+
+    private async Task<IEnumerable<GetTopicsByTermResponse>> GetTopics(string term)
+    {
+        var response = await httpClient.GetJsonAsync<ApiResponse<IEnumerable<GetTopicsByTermResponse>>>($"topics/find/?term={term}");
+
+        return response.Result;
+    }
+
+    private async void GetGroups()
+    {
+        await JSRuntime.InvokeVoidAsync("exploreGroups.showSpinner");
+
+        var response = await httpClient.GetJsonAsync<ApiResponse<FindGroupsResponse[]>>($"groups/find/?cityId={SelectedCity.Id}&topicIds={SelectedTopic.Id}");
+
+        groups = response.Result;
+
+        await JSRuntime.InvokeVoidAsync("exploreGroups.hideSpinner");
+
+        StateHasChanged();
+    }
+
+    private void InputChanged()
+    {
+        if (SelectedCity != null && SelectedTopic != null)
+        {
+            GetGroups();
+        }
+    }
+}
