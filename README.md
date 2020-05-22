@@ -21,6 +21,11 @@ haberdar olabiliyor. Katılımcılar katıldıkları etkinlikler ile ilgili değ
 * Refit
 * Swagger
 
+#### Docker Komutları
+
+docker-compose up -d
+
+docker-compose -f docker-compose-services.yml -f docker-compose-services.override.yml up -d
 
 #### Couchbase Betikleri
 [![Run in Postman](https://run.pstmn.io/button.svg)](https://app.getpostman.com/run-collection/db20c6849fe829fa2bde)
